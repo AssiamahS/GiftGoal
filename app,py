@@ -1,0 +1,58 @@
+from flask import Flask, request, jsonify, render_template
+from bs4 import BeautifulSoup
+import requests
+import datetime
+
+app = Flask(__name__)
+
+# In-memory storage for simplicity
+wishlist = []
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/add_gift', methods=['POST'])
+def add_gift():
+    data = request.json
+    gift_url = data.get('gift_url')
+    due_date = data.get('due_date')
+    goal_amount = get_price(gift_url)
+
+    gift = {
+        'gift_url': gift_url,
+        'due_date': due_date,
+        'goal_amount': goal_amount,
+        'saved_amount': 0,
+        'added_date': datetime.datetime.now().strftime("%Y-%m-%d")
+    }
+    wishlist.append(gift)
+    return jsonify(gift), 201
+
+def get_price(url):
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, 'html.parser')
+    # Example scraping logic, adjust according to the site structure
+    price_tag = soup.find('span', {'class': 'price'})
+    price = price_tag.text.strip().replace('$', '') if price_tag else '0'
+    return float(price)
+
+@app.route('/update_savings', methods=['POST'])
+def update_savings():
+    data = request.json
+    gift_url = data.get('gift_url')
+    amount = data.get('amount')
+
+    for gift in wishlist:
+        if gift['gift_url'] == gift_url:
+            gift['saved_amount'] += amount
+            break
+
+    return jsonify(gift), 200
+
+@app.route('/wishlist')
+def get_wishlist():
+    return jsonify(wishlist), 200
+
+if __name__ == "__main__":
+    app.run(debug=True)
