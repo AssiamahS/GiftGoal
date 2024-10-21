@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wishlist</title>
+    <style>
+        .progress-bar {
+            width: 100%;
+            background-color: #f3f3f3;
+            border: 1px solid #ddd;
+        }
+        .progress-bar-fill {
+            display: block;
+            height: 30px;
+            background-color: #4caf50;
+            text-align: center;
+            color: white;
+            width: 0%;
+        }
+    </style>
+</head>
+<body>
+    <h1>Wishlist</h1>
+    <div>
+        <label for="gift_url">Gift URL:</label>
+        <input type="text" id="gift_url">
+        <label for="due_date">Due Date:</label>
+        <input type="date" id="due_date">
+        <button onclick="addGift()">Add Gift</button>
+    </div>
+    <div id="wishlist"></div>
+
+    <script>
+        async function addGift() {
+            const gift_url = document.getElementById('gift_url').value;
+            const due_date = document.getElementById('due_date').value;
+
+            const response = await fetch('/add_gift', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ gift_url, due_date }),
+            });
+            const gift = await response.json();
+            displayGift(gift);
+        }
+
+        function displayGift(gift) {
+            const wishlistDiv = document.getElementById('wishlist');
+            const giftDiv = document.createElement('div');
+
+            const daysLeft = Math.ceil((new Date(gift.due_date) - new Date()) / (1000 * 60 * 60 * 24));
+            const progress = (gift.saved_amount / gift.goal_amount) * 100;
+
+            giftDiv.innerHTML = `
+                <h2>${gift.gift_url}</h2>
+                <p>Due Date: ${gift.due_date} (${daysLeft} days left)</p>
+                <p>Goal Amount: $${gift.goal_amount.toFixed(2)}</p>
+                <p>Saved Amount: $${gift.saved_amount.toFixed(2)}</p>
+                <div class="progress-bar">
+                    <span class="progress-bar-fill" style="width: ${progress}%">${progress.toFixed(2)}%</span>
+                </div>
+            `;
+            wishlistDiv.appendChild(giftDiv);
+        }
+    </script>
+</body>
+</html>
